@@ -20,6 +20,7 @@ var instance = new TestClass();
 vargs.help(TestClass.prototype.getSomething);
 vargs.help(instance.getSomething);
 
+console.log("\n/*NOW TO USE THE INSTANCE WE CREATED*/\n");
 //try calling the method with correct parameters
 instance.getSomething("id", function(err, result){
 	
@@ -29,7 +30,11 @@ instance.getSomething("id", {page:1}, function(err, result){
 	
 });
 
-//try again but with an error
-instance.getSomething("id", {page:1}, function(err){
+try{
+	//try again but delibrately make a mistake (only 1 parameter expected on callback)
+	instance.getSomething("id", {page:1}, function(err){
 	
-});
+	});
+}catch(err){
+	console.log(err);
+}

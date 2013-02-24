@@ -5,18 +5,17 @@ Vargs = module.exports = function(){
 }
 
 /*example
-var config = {
+var schemas = {
 	id : {type:String, required:true},
 	options : {type:[Array,Object], default:null},
 	cb : {type:Function, required:true}
 }
-
 */
 
-Vargs.exec = function(args, config){
-	config = config || args.callee.args;
-	if(config == null){
-		throw new Error("No config provided and the arguments.callee has no args defined - see README for instructions");
+Vargs.exec = function(args, schemas){
+	schemas = schemas || args.callee.args;
+	if(schemas == null){
+		throw new Error("No schemas provided and the arguments.callee has no args defined - see README for instructions");
 	}
 	
 	var result = {};
@@ -24,23 +23,23 @@ Vargs.exec = function(args, config){
 	//VALIDATE THE CONFIGURATOR FOR THE ARGUMENTS BEFORE WE USE IT
 	var ids = [], hasNonRequiredParams = false, hasCallback = false, callbackId = null, callbackRequired = null, 
 	minRequired = 0, maxRequired = 0;
-	for(var id in config){
+	for(var id in schemas){
 		//add to stack for easier reference later
 		ids.push(id);
 		
-		if(!config[id]){
-			//ERROR:null config provided for parameter
-			throw new Error("Null config provided for parameter '"+id+"'");
+		if(!schemas[id]){
+			//ERROR:null schemas provided for parameter
+			throw new Error("Null schema provided for parameter '"+id+"'");
 		}
 		
 		//STANDARDISE THE CONFIG VALUE - so if {id:String}, replace it with {id:{type:String}}
-		if(config[id] instanceof Function){
-			config[id] = {type:config[id]};
+		if(schemas[id] instanceof Function){
+			schemas[id] = {type:schemas[id]};
 		}
 		
 		//STANDARDISE REQUIRED
-		config[id].id = id;//make note of the id for reference
-		var required = config[id].required = isParamRequired(config[id]);
+		schemas[id].id = id;//make note of the id for reference
+		var required = schemas[id].required = isParamRequired(schemas[id]);
 		
 		//increment minRequired count
 		if(required){
@@ -57,7 +56,7 @@ Vargs.exec = function(args, config){
 		
 		//IF PROVIDED A CALLBACK THEN VALIDATE IT
 		if(id == "cb" || id == "callback"){
-			if(config[id].type !== Function){
+			if(schemas[id].type !== Function){
 				throw new Error("Reserved parameter '"+id+"' used without {type:Function}");
 			}
 			
@@ -66,20 +65,20 @@ Vargs.exec = function(args, config){
 			callbackId = id;
 			
 			//STANDARISE THE ARGS OPTION
-			if(config[id].args){
+			if(schemas[id].args){
 				//IF JUST PROVIDED A NUMBER THEN THIS IS THE MIN AND MAX
-				if(!isNaN(config[id].args)){
-					config[id].args = {min:config[id].args, max : config[id].args};
+				if(!isNaN(schemas[id].args)){
+					schemas[id].args = {min:schemas[id].args, max : schemas[id].args};
 				}
 				//makesure we have a minimum and maximum
-				config[id].args.min = isNaN(config[id].args.min) ? 0 : config[id].args.min;
-				config[id].args.max = isNaN(config[id].args.max) ? Infinity : config[id].args.max;
+				schemas[id].args.min = isNaN(schemas[id].args.min) ? 0 : schemas[id].args.min;
+				schemas[id].args.max = isNaN(schemas[id].args.max) ? Infinity : schemas[id].args.max;
 			}
 		}
 		
 		//check if have a non required argument followed by a required
 		if(hasNonRequiredParams && required){
-			//only expecption to this is if the config[id] is the callback
+			//only expecption to this is if the schemas[id] is the callback
 			if(!hasCallback){
 				throw new Error("Not able to have a non-required parameter followed by required parameter '"+id+"'");
 			}
@@ -96,14 +95,14 @@ Vargs.exec = function(args, config){
 	if(args.length > maxRequired){
 		throw new Error("Too many arguments, expected maximum of "+maxRequired+" but received "+args.length);
 	}
-	//SORT THE ARGUMENTS - use the config to unwrap the arguments
+	//SORT THE ARGUMENTS - use the schemas to unwrap the arguments
 	var ic = -1;
 	function hasNextArgumentSchema(){
 		return (ic + 1) < ids.length ? true : false
 	}
 	
 	function getNextArgumentSchema(){
-		var schema = hasNextArgumentSchema() ? config[ids[++ic]] : null;
+		var schema = hasNextArgumentSchema() ? schemas[ids[++ic]] : null;
 		if(schema == null){
 			throw new Error("Too many arguments provided - schema was exhausted");
 		}
@@ -121,7 +120,7 @@ Vargs.exec = function(args, config){
 		while(!isValidArgument(arg, schema)){
 			//that argument didn't match the schema - keep trying until we get a schema that does
 			if(schema.required){
-				throw new Error("Arguments don't match schema, required params '"+schema.id+"' is missing\n\n[Schema "+util.inspect(config)+"]\n\n[Arguments "+util.inspect(args)+"]");
+				throw new Error("Arguments don't match schema, required params '"+schema.id+"' is missing\n\n[Schema "+util.inspect(schemas)+"]\n\n[Arguments "+util.inspect(args)+"]");
 			}else{
 				//take the default value for this item
 				result[schema.id] = schema.default;
