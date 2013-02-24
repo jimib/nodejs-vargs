@@ -16,7 +16,7 @@ var config = {
 Vargs.exec = function(args, config){
 	config = config || args.callee.args;
 	if(config == null){
-		error("No config provided and the arguments.callee has no args defined - see README for instructions");
+		throw new Error("No config provided and the arguments.callee has no args defined - see README for instructions");
 	}
 	
 	var result = {};
@@ -30,7 +30,7 @@ Vargs.exec = function(args, config){
 		
 		if(!config[id]){
 			//ERROR:null config provided for parameter
-			error("Null config provided for parameter '"+id+"'");
+			throw new Error("Null config provided for parameter '"+id+"'");
 		}
 		
 		//STANDARDISE THE CONFIG VALUE - so if {id:String}, replace it with {id:{type:String}}
@@ -51,14 +51,14 @@ Vargs.exec = function(args, config){
 		//IF WE HAVE CALL BACK THEN THERE'S BEEN A MISTAKE
 		if(hasCallback){
 			//ERROR:processing another parameter after a callback was defined
-			error("Additional parameter '"+id+"' defined after callback '"+callbackId+"'");
+			throw new Error("Additional parameter '"+id+"' defined after callback '"+callbackId+"'");
 		}
 		
 		
 		//IF PROVIDED A CALLBACK THEN VALIDATE IT
 		if(id == "cb" || id == "callback"){
 			if(config[id].type !== Function){
-				error("Reserved parameter '"+id+"' used without {type:Function}");
+				throw new Error("Reserved parameter '"+id+"' used without {type:Function}");
 			}
 			
 			hasCallback = true;
@@ -90,11 +90,11 @@ Vargs.exec = function(args, config){
 	}
 	 
 	if(args.length < minRequired){
-		error("Too few arguments, expected minimum of "+minRequired+" but received "+args.length);
+		throw new Error("Too few arguments, expected minimum of "+minRequired+" but received "+args.length);
 	}
 	
 	if(args.length > maxRequired){
-		error("Too many arguments, expected maximum of "+maxRequired+" but received "+args.length);
+		throw new Error("Too many arguments, expected maximum of "+maxRequired+" but received "+args.length);
 	}
 	//SORT THE ARGUMENTS - use the config to unwrap the arguments
 	var ic = -1;
@@ -105,7 +105,7 @@ Vargs.exec = function(args, config){
 	function getNextArgumentSchema(){
 		var schema = hasNextArgumentSchema() ? config[ids[++ic]] : null;
 		if(schema == null){
-			error("Too many arguments provided - schema was exhausted");
+			throw new Error("Too many arguments provided - schema was exhausted");
 		}
 		return schema;
 	}
@@ -121,7 +121,7 @@ Vargs.exec = function(args, config){
 		while(!isValidArgument(arg, schema)){
 			//that argument didn't match the schema - keep trying until we get a schema that does
 			if(schema.required){
-				error("Arguments don't match schema, required params '"+schema.id+"' is missing\n\n[Schema "+util.inspect(config)+"]\n\n[Arguments "+util.inspect(args)+"]");
+				throw new Error("Arguments don't match schema, required params '"+schema.id+"' is missing\n\n[Schema "+util.inspect(config)+"]\n\n[Arguments "+util.inspect(args)+"]");
 			}else{
 				//take the default value for this item
 				result[schema.id] = schema.default;
@@ -135,7 +135,7 @@ Vargs.exec = function(args, config){
 		
 		//if it's the callback we need to validate it
 		if(schema.id == callbackId && schema.args){
-			console.log("validate callback");
+			
 			var err;
 			if(arg.length < schema.args.min){
 				err = "Too few parameters provided on callback";
@@ -154,7 +154,7 @@ Vargs.exec = function(args, config){
 				}else if(!isNaN(schema.args.max)){
 					err += "expected more than "+schema.args.max;
 				}
-				error(err);
+				throw new Error(err);
 			}
 		}
 	}
@@ -169,12 +169,14 @@ Vargs.exec = function(args, config){
 }
 
 Vargs.help = function(method){
-	
-}
-
-function error(err, msgConsole){
-	//console.warn(msgConsole || err);
-	throw new Error(err);
+	if(method instanceof Function && method.args){
+		console.log("help: ", method.name || "anonymous function");
+		var schemas = method.args;
+		for(var i in schemas){
+			var schema = schemas[i];
+			console.log("\t",i, schema);
+		}
+	}
 }
 
 function isUndefined(val){
