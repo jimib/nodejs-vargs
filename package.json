@@ -1,0 +1,11 @@
+{
+  "name": "vargs",
+  "description": "Library for validating arguments for methods - also serves as a way for documentation if used in a specific way",
+  "version": "0.0.1",
+  "author": {
+    "name": "jimib",
+    "email": "jimi.bailey@gmail.com"
+  },
+  "dependencies": {
+  }
+}
